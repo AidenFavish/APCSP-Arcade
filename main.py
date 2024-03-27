@@ -1,5 +1,7 @@
 import arcade
 import helper
+import menu
+import solitaire
 from typing import List
 
 # Set up the constants
@@ -13,42 +15,45 @@ RECT_HEIGHT = 50
 class MyApplication(arcade.Window):
     def __init__(self, width, height, theTitle):
         super().__init__(width, height, title=theTitle)
-        self.mouse_loaded = True  # Boolean valuable that restricts holding mouse down for multiple clicks
-        self.mouse_up = True
-        self.mouse_location = [0, 0]
-        self.buttons: List[helper.Button] = []  # Holds all buttons
-        self.test = helper.ClassicButton(self.buttons, 250, 250, 300, 100, "Test", print, color=arcade.color.RED)
+        self.mouse: helper.Mouse = None
+        self.buttons: List[helper.Button] = None
+        self.page: helper.Page = None
 
     def setup(self):
-        # Create arcade objects
-        pass
+        # Creates game objects
+        self.mouse = helper.Mouse()
+        self.buttons = []  # Holds all buttons
+        self.page = menu.Menu(self)  # Landing page
 
     def update(self, dt):
         # Make visual and background calculations
-        pass
+        self.page.update(self.mouse)
 
     def on_draw(self):
         # Draw visuals to screen
-        self.test.draw()
+        self.page.draw()
 
     def on_mouse_motion(self, x, y, dx, dy):
-        self.mouse_location[0] = x
-        self.mouse_location[1] = y
+        self.mouse.setLocation(x, y)
 
     def on_mouse_press(self, x: float, y: float, button, modifiers):
-        self.mouse_up = False
-        if self.mouse_loaded:  # Only register a single click
+        self.mouse.up = False
+        if self.mouse.loaded:  # Only register a single click
             for b in self.buttons:
                 if b.in_bounds(x, y):
                     b.clicked()
-            self.mouse_loaded = False
+            self.mouse.loaded = False
 
     def on_mouse_release(self, x, y, button, modifiers):
-        self.mouse_up = True
-        self.mouse_loaded = True
+        self.mouse.up = True
+        self.mouse.loaded = True
 
     def change_page(self, page):
-        pass
+        self.buttons = []  # Needs to reset buttons for new page
+        if page == "SOLITAIRE":
+            self.page = solitaire.Solitaire(self)
+        else:
+            self.page = menu.Menu(self)
 
 
 def main():
