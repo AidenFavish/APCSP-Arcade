@@ -3,7 +3,6 @@ import arcade
 # Class that manages mouse attributes
 class Mouse:
     def __init__(self):
-        self.loaded = True  # Boolean valuable that restricts holding mouse down for multiple clicks
         self.up = True
         self.x = 0.0
         self.y = 0.0
@@ -23,7 +22,10 @@ class Button:
     def clicked(self):
         pass
 
-    def update(self, mouse):
+    def released(self):
+        pass
+
+    def update(self, mouse: Mouse):
         pass
 
     def draw(self):

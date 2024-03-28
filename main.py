@@ -4,6 +4,7 @@ import menu
 import solitaire
 import loldle
 from typing import List
+import random
 
 # Set up the constants
 SCREEN_TITLE = "Arcade"
@@ -32,22 +33,28 @@ class MyApplication(arcade.Window):
 
     def on_draw(self):
         # Draw visuals to screen
+        arcade.start_render()
         self.page.draw()
 
     def on_mouse_motion(self, x, y, dx, dy):
         self.mouse.setLocation(x, y)
+        print(random.randint(10, 20))
 
     def on_mouse_press(self, x: float, y: float, button, modifiers):
+        print(f"press {random.randint(0, 3)}")
         self.mouse.up = False
-        if self.mouse.loaded:  # Only register a single click
-            for b in self.buttons:
-                if b.in_bounds(x, y):
-                    b.clicked()
-            self.mouse.loaded = False
+        for b in self.buttons:
+            if b.in_bounds(x, y):
+                b.clicked()
+                break
 
     def on_mouse_release(self, x, y, button, modifiers):
         self.mouse.up = True
-        self.mouse.loaded = True
+        for b in self.buttons:
+            if b.in_bounds(x, y):
+                b.released()
+                break
+        
 
     def change_page(self, page):
         self.buttons = []  # Needs to reset buttons for new page
