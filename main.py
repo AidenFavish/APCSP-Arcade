@@ -2,6 +2,7 @@ import arcade
 import helper
 import menu
 import solitaire
+import loldle
 from typing import List
 
 # Set up the constants
@@ -52,6 +53,8 @@ class MyApplication(arcade.Window):
         self.buttons = []  # Needs to reset buttons for new page
         if page == "SOLITAIRE":
             self.page = solitaire.Solitaire(self)
+        elif page == "LOLDLE":
+            self.page = loldle.loldle(self)
         else:
             self.page = menu.Menu(self)
 
