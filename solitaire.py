@@ -11,6 +11,7 @@ class Card(helper.Button):
         self.suit = self.decode_suit(suit)
         self.sprite_list: arcade.SpriteList = spriteList
         self.game = game
+        self.suit_color = 0 if self.suit < 2 else 1
 
         self.center_x = center_x
         self.center_y = center_y
@@ -33,7 +34,7 @@ class Card(helper.Button):
         self.game.clicked(self)
 
     def released(self):
-        self.game.released()
+        self.game.released(self)
 
     def decode_face(self, face):
         if type(face) != int:
@@ -100,6 +101,10 @@ class SolitaireGame:
     def __init__(self, mainSpriteList: arcade.SpriteList, buttonList):
         self.mainSpriteList = mainSpriteList
         self.buttonList = buttonList
+
+        self.deck_pos = (75, 450)
+        self.revealed = []
+        self.revealed_pos = (75, 300)
         
         self.deck = self.get_fresh_shuffled_deck()
         self.dragging = []
@@ -110,7 +115,7 @@ class SolitaireGame:
 
         self.tableau_centers = [200, 300, 400, 500, 600, 700, 800]
         self.tableau_y_top = 550
-        self.tableau_spacing = 35
+        self.tableau_spacing = 25
         self.tableau = self.make_tableau(self.deck)
 
         self.cover = arcade.Sprite("cover.png")
@@ -139,7 +144,7 @@ class SolitaireGame:
         deck = []
         for face in range(1, 14):
             for suit in range(4):
-                deck.append(Card(self.mainSpriteList, self.buttonList, self, face, suit, 300, 300))
+                deck.append(Card(self.mainSpriteList, self.buttonList, self, face, suit, self.deck_pos[0], self.deck_pos[1]))
         random.shuffle(deck)
 
         self.mainSpriteList.clear()
@@ -159,7 +164,7 @@ class SolitaireGame:
             i.center_y = mouse.y - (temp - i.center_y)
 
         if self.dragging != [] and mouse.up:
-            self.released()
+            self.released(None)
 
         self.in_placeable_bounds(mouse.x, mouse.y)
 
@@ -167,31 +172,134 @@ class SolitaireGame:
         for i in self.deck:
             i.update(mouse)
 
+        for i in self.revealed:
+            i.update(mouse)
+
         for i in self.tableau:
+            for j in i:
+                j.update(mouse)
+
+        for i in self.foundation:
             for j in i:
                 j.update(mouse)
 
         self.mainSpriteList.update()
 
-    def clicked(self, card):
+    def clicked(self, card:Card):
+
         if self.dragging != []:
             return
 
-        index = 0
+        index = -1
         for i in range(0, len(self.tableau)):
             if card in self.tableau[i]:
                 index = i
 
-        for i in range(self.tableau[index].index(card), len(self.tableau[index])):
-            self.dragging.append(self.tableau[index][i])
-            self.mainSpriteList.remove(self.tableau[index][i].shown_sprite)
-            self.mainSpriteList.append(self.tableau[index][i].shown_sprite)
+        print(f"index: {index}")
 
-    def released(self):
+        if index != -1 and not card.on_back:
+            for i in range(self.tableau[index].index(card), len(self.tableau[index])):
+                self.dragging.append(self.tableau[index][i])
+                self.mainSpriteList.remove(self.tableau[index][i].shown_sprite)
+                self.mainSpriteList.append(self.tableau[index][i].shown_sprite)
+                self.buttonList.remove(self.tableau[index][i])
+                self.buttonList.insert(0, self.tableau[index][i])
+
+        elif card in self.deck:
+            # Draw a card
+            self.deck.remove(card)
+            self.revealed.append(card)
+            self.mainSpriteList.remove(card.shown_sprite)
+            self.mainSpriteList.append(card.shown_sprite)
+            self.buttonList.remove(card)
+            self.buttonList.insert(0, card)
+            card.snap_position = (self.revealed_pos[0], self.revealed_pos[1])
+            card.center_x = card.snap_position[0]
+            card.center_y = card.snap_position[1]
+            card.to_back(False)
+            print(card.center_y)
+
+        elif card in self.revealed:
+            self.dragging.append(card)
+            self.mainSpriteList.remove(card.shown_sprite)
+            self.mainSpriteList.append(card.shown_sprite)
+            self.buttonList.remove(card)
+            self.buttonList.insert(0, card)
+
+    def released(self, card: Card):
+        if card != None and len(self.dragging) > 0:
+            card = self.dragging[0]
+            placeable, p_index = self.in_placeable_bounds(card.center_x, card.center_y)
+        else:
+            placeable = None
+        print("yum5")
+        if placeable != None:
+            card_loc = self.find_card_loc(card)
+            tempT = ""
+            for g in placeable:
+                tempT += str(g.face) + ", "
+            print(f"yum4: {tempT} and {card.face}")
+
+            if card not in placeable:
+                print("yum3")
+                if placeable in self.tableau and self.tableau[p_index] is placeable:
+                    print("yum2")
+                    if len(placeable) == 0 and card.face == 13:
+                        tempX = p_index
+                        for i in range(len(self.dragging)):
+                            card_loc.remove(self.dragging[i])
+                            placeable.append(self.dragging[i])
+                            card.snap_position = (self.tableau_centers[tempX], self.tableau_y_top - i * self.tableau_spacing)
+                    elif placeable != [] and placeable[-1].face - 1 == card.face and placeable[-1].suit_color != card.suit_color:
+                        tempX = p_index
+                        print("yum")
+                        for i in range(len(self.dragging)):
+                            print(f"rah: {i}")
+                            card_loc.remove(self.dragging[i])
+                            placeable.append(self.dragging[i])
+                            self.dragging[i].snap_position = (self.tableau_centers[tempX], self.tableau_y_top - (len(placeable) - 1) * self.tableau_spacing)
+                    if card_loc in self.tableau and len(card_loc) > 0 and card_loc[-1].on_back:
+                        card_loc[-1].to_back(False)
+                elif placeable in self.foundation:
+                    print("blud")
+                    if len(self.dragging) == 1:
+                        print("blud2")
+                        suit_pile = p_index
+                        if suit_pile == card.suit:
+                            print("blud3")
+                            if (placeable == [] and card.face == 1) or (placeable != [] and card.face == placeable[-1].face + 1):
+                                print("blud4")
+                                placeable.append(card)
+                                card_loc.remove(card)
+                                card.snap_position = (self.foundation_x, self.foundation_y[suit_pile])
+                                if card_loc in self.tableau and len(card_loc) > 0 and card_loc[-1].on_back:
+                                    card_loc[-1].to_back(False)
+                            
+                                
+
+
+
+
+
         for card in self.dragging:
             card.center_x = card.snap_position[0]
             card.center_y = card.snap_position[1]
         self.dragging = []
+
+    def find_card_loc(self, card: Card):
+        for i in self.foundation:
+            if card in i:
+                return i
+            
+        for i in self.tableau:
+            if card in i:
+                return i
+            
+        if card in self.deck:
+            return self.deck
+        
+        if card in self.revealed:
+            return self.revealed
 
     def in_placeable_bounds(self, x, y):
         width = 70.2
@@ -200,27 +308,34 @@ class SolitaireGame:
         if self.dragging == []:
             if self.cover in self.mainSpriteList:
                 self.mainSpriteList.remove(self.cover)
-            return
+            return None, None
 
         # Check foundation
-        for i in self.foundation_y:
-            if (self.foundation_x - width / 2 <= x <= self.foundation_x + width / 2) and (i - height / 2 <= y <= i + height / 2):
+        for i in range(len(self.foundation_y)):
+            if (self.foundation_x - width / 2 <= x <= self.foundation_x + width / 2) and (self.foundation_y[i] - height / 2 <= y <= self.foundation_y[i] + height / 2):
                 if self.cover not in self.mainSpriteList:
-                    self.cover.set_position(self.foundation_x, i)
-                    self.insert_cover(len(self.mainSpriteList) - 1 - len(self.dragging))
-                return
+                    self.cover.set_position(self.foundation_x, self.foundation_y[i])
+                    self.insert_cover(len(self.mainSpriteList) - len(self.dragging))
+                return self.foundation[i], i
             
         for i in range(len(self.tableau_centers)):
             tx = self.tableau_centers[i]
-            ty = self.tableau_y_top - len(self.tableau[i]) * self.tableau_spacing
+
+            if self.dragging[0] in self.tableau[i]:
+                ty = self.tableau_y_top - (len(self.tableau[i]) - len(self.dragging)) * self.tableau_spacing  # Aligns already picked up cards
+            else:
+                ty = self.tableau_y_top - len(self.tableau[i]) * self.tableau_spacing
+
             if (tx - width / 2 <= x <= tx + width / 2) and (ty - height / 2 <= y <= ty + height / 2):
                 if self.cover not in self.mainSpriteList:
                     self.cover.set_position(tx, ty)
                     self.insert_cover(len(self.mainSpriteList) - 1 - len(self.dragging))
-                return
+                return self.tableau[i], i
             
         if self.cover in self.mainSpriteList:
             self.mainSpriteList.remove(self.cover)
+            
+        return None, None
 
     def insert_cover(self, index):
         temp = []
@@ -230,6 +345,20 @@ class SolitaireGame:
         for i in range(len(temp)):
             self.mainSpriteList.append(temp[len(temp) - 1 - i])
 
+    def reshuffle_deck(self):
+        for index in range(len(self.revealed)):
+            i = self.revealed[len(self.revealed) - 1 - index]
+            self.deck.append(i)
+            self.buttonList.remove(i)
+            self.buttonList.insert(0, i)
+            i.to_back(True)
+            i.center_x = self.deck_pos[0]
+            i.center_y = self.deck_pos[1]
+            i.snap()
+            self.mainSpriteList.remove(i.shown_sprite)
+            self.mainSpriteList.append(i.shown_sprite)
+        self.revealed = []
+
 
 
 class Solitaire(helper.Page):
@@ -237,10 +366,13 @@ class Solitaire(helper.Page):
         super().__init__(app)
         self.mainSpriteList = arcade.SpriteList(use_spatial_hash=True)
         self.game = SolitaireGame(self.mainSpriteList, app.buttons)
+        self.reshuffle = helper.ClassicButton(app.buttons, self.game.deck_pos[0], self.game.deck_pos[1], 75, 75, "Reshuffle", self.game.reshuffle_deck, arcade.color.GRAY, font_size=12)
 
     def update(self, mouse: helper.Mouse):
         self.game.update(mouse)
+        self.reshuffle.update(mouse)
 
     def draw(self):
         arcade.draw_rectangle_filled(500, 325, 1000, 650, arcade.color.FOREST_GREEN)
+        self.reshuffle.draw()
         self.mainSpriteList.draw()

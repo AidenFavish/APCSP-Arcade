@@ -38,10 +38,8 @@ class MyApplication(arcade.Window):
 
     def on_mouse_motion(self, x, y, dx, dy):
         self.mouse.setLocation(x, y)
-        print(random.randint(10, 20))
 
     def on_mouse_press(self, x: float, y: float, button, modifiers):
-        print(f"press {random.randint(0, 3)}")
         self.mouse.up = False
         for b in self.buttons:
             if b.in_bounds(x, y):
