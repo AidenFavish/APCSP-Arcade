@@ -111,7 +111,7 @@ class SolitaireGame:
 
         self.foundation = [[], [], [], []]
         self.foundation_x = 900
-        self.foundation_y = [550, 410, 270, 130]
+        self.foundation_y = [550, 420, 290, 160]
 
         self.tableau_centers = [200, 300, 400, 500, 600, 700, 800]
         self.tableau_y_top = 550
@@ -249,7 +249,7 @@ class SolitaireGame:
                         for i in range(len(self.dragging)):
                             card_loc.remove(self.dragging[i])
                             placeable.append(self.dragging[i])
-                            card.snap_position = (self.tableau_centers[tempX], self.tableau_y_top - i * self.tableau_spacing)
+                            self.dragging[i].snap_position = (self.tableau_centers[tempX], self.tableau_y_top - i * self.tableau_spacing)
                     elif placeable != [] and placeable[-1].face - 1 == card.face and placeable[-1].suit_color != card.suit_color:
                         tempX = p_index
                         print("yum")
@@ -329,7 +329,7 @@ class SolitaireGame:
             if (tx - width / 2 <= x <= tx + width / 2) and (ty - height / 2 <= y <= ty + height / 2):
                 if self.cover not in self.mainSpriteList:
                     self.cover.set_position(tx, ty)
-                    self.insert_cover(len(self.mainSpriteList) - 1 - len(self.dragging))
+                    self.insert_cover(len(self.mainSpriteList) - len(self.dragging))
                 return self.tableau[i], i
             
         if self.cover in self.mainSpriteList:
@@ -364,15 +364,40 @@ class SolitaireGame:
 class Solitaire(helper.Page):
     def __init__(self, app):
         super().__init__(app)
-        self.mainSpriteList = arcade.SpriteList(use_spatial_hash=True)
+        self.mainSpriteList = arcade.SpriteList()
+
+        self.smallSpriteList = arcade.SpriteList()
+        self.smallSpriteList.append(arcade.Sprite("heartsCover.png", center_x=900, center_y=550))
+        self.smallSpriteList.append(arcade.Sprite("DiamondsCover.png", center_x=900, center_y=420))
+        self.smallSpriteList.append(arcade.Sprite("ClubsCover.png", center_x=900, center_y=290))
+        self.smallSpriteList.append(arcade.Sprite("SpadesCover.png", center_x=900, center_y=160))
+        
         self.game = SolitaireGame(self.mainSpriteList, app.buttons)
-        self.reshuffle = helper.ClassicButton(app.buttons, self.game.deck_pos[0], self.game.deck_pos[1], 75, 75, "Reshuffle", self.game.reshuffle_deck, arcade.color.GRAY, font_size=12)
+        self.reshuffle = helper.ClassicButton(app.buttons, self.game.deck_pos[0], self.game.deck_pos[1], 65, 75, "Reshuffle", self.game.reshuffle_deck, arcade.color.GRAY, font_size=12)
+        self.restart = helper.ClassicButton(app.buttons, 825, 45, 85, 35, "Restart", self.restartFunc, arcade.color.MAROON, font_size=12)
+        self.menu = helper.ClassicButton(app.buttons, 925, 45, 85, 35, "Menu", self.menuFunc, arcade.color.BLACK, font_size=12)
 
     def update(self, mouse: helper.Mouse):
         self.game.update(mouse)
         self.reshuffle.update(mouse)
+        self.restart.update(mouse)
+        self.menu.update(mouse)
 
     def draw(self):
         arcade.draw_rectangle_filled(500, 325, 1000, 650, arcade.color.FOREST_GREEN)
         self.reshuffle.draw()
+        self.restart.draw()
+        self.menu.draw()
+        self.smallSpriteList.draw()
         self.mainSpriteList.draw()
+
+    def restartFunc(self):
+        self.app.buttons = []
+        self.mainSpriteList = arcade.SpriteList()
+        self.game = SolitaireGame(self.mainSpriteList, self.app.buttons)
+        self.reshuffle = helper.ClassicButton(self.app.buttons, self.game.deck_pos[0], self.game.deck_pos[1], 65, 75, "Reshuffle", self.game.reshuffle_deck, arcade.color.GRAY, font_size=12)
+        self.app.buttons.append(self.restart)
+        self.app.buttons.append(self.menu)
+
+    def menuFunc(self):
+        self.app.change_page("MENU")
