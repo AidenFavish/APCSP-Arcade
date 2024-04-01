@@ -120,6 +120,8 @@ class SolitaireGame:
 
         self.cover = arcade.Sprite("cover.png")
 
+        self.decidied = None
+
     def make_tableau(self, deck):
         centers = self.tableau_centers
         y_top = self.tableau_y_top
@@ -195,7 +197,6 @@ class SolitaireGame:
             if card in self.tableau[i]:
                 index = i
 
-        print(f"index: {index}")
 
         if index != -1 and not card.on_back:
             for i in range(self.tableau[index].index(card), len(self.tableau[index])):
@@ -217,7 +218,7 @@ class SolitaireGame:
             card.center_x = card.snap_position[0]
             card.center_y = card.snap_position[1]
             card.to_back(False)
-            print(card.center_y)
+            
 
         elif card in self.revealed:
             self.dragging.append(card)
@@ -232,18 +233,18 @@ class SolitaireGame:
             placeable, p_index = self.in_placeable_bounds(card.center_x, card.center_y)
         else:
             placeable = None
-        print("yum5")
+        
         if placeable != None:
             card_loc = self.find_card_loc(card)
             tempT = ""
             for g in placeable:
                 tempT += str(g.face) + ", "
-            print(f"yum4: {tempT} and {card.face}")
+            
 
             if card not in placeable:
-                print("yum3")
+                
                 if placeable in self.tableau and self.tableau[p_index] is placeable:
-                    print("yum2")
+                    
                     if len(placeable) == 0 and card.face == 13:
                         tempX = p_index
                         for i in range(len(self.dragging)):
@@ -252,23 +253,23 @@ class SolitaireGame:
                             self.dragging[i].snap_position = (self.tableau_centers[tempX], self.tableau_y_top - i * self.tableau_spacing)
                     elif placeable != [] and placeable[-1].face - 1 == card.face and placeable[-1].suit_color != card.suit_color:
                         tempX = p_index
-                        print("yum")
+                        
                         for i in range(len(self.dragging)):
-                            print(f"rah: {i}")
+                            
                             card_loc.remove(self.dragging[i])
                             placeable.append(self.dragging[i])
                             self.dragging[i].snap_position = (self.tableau_centers[tempX], self.tableau_y_top - (len(placeable) - 1) * self.tableau_spacing)
                     if card_loc in self.tableau and len(card_loc) > 0 and card_loc[-1].on_back:
                         card_loc[-1].to_back(False)
                 elif placeable in self.foundation:
-                    print("blud")
+                    
                     if len(self.dragging) == 1:
-                        print("blud2")
+                        
                         suit_pile = p_index
                         if suit_pile == card.suit:
-                            print("blud3")
+                            
                             if (placeable == [] and card.face == 1) or (placeable != [] and card.face == placeable[-1].face + 1):
-                                print("blud4")
+                                
                                 placeable.append(card)
                                 card_loc.remove(card)
                                 card.snap_position = (self.foundation_x, self.foundation_y[suit_pile])
@@ -285,6 +286,8 @@ class SolitaireGame:
             card.center_x = card.snap_position[0]
             card.center_y = card.snap_position[1]
         self.dragging = []
+
+        self.check_win()
 
     def find_card_loc(self, card: Card):
         for i in self.foundation:
@@ -359,6 +362,13 @@ class SolitaireGame:
             self.mainSpriteList.append(i.shown_sprite)
         self.revealed = []
 
+    def check_win(self):
+        for i in self.foundation:
+            if not (len(i) > 0 and i[-1].face == 13):
+                return
+
+        self.decidied = True
+
 
 
 class Solitaire(helper.Page):
@@ -376,6 +386,8 @@ class Solitaire(helper.Page):
         self.reshuffle = helper.ClassicButton(app.buttons, self.game.deck_pos[0], self.game.deck_pos[1], 65, 75, "Reshuffle", self.game.reshuffle_deck, arcade.color.GRAY, font_size=12)
         self.restart = helper.ClassicButton(app.buttons, 825, 45, 85, 35, "Restart", self.restartFunc, arcade.color.MAROON, font_size=12)
         self.menu = helper.ClassicButton(app.buttons, 925, 45, 85, 35, "Menu", self.menuFunc, arcade.color.BLACK, font_size=12)
+        self.you_won = arcade.Text("YOU WON!", 300, 45,font_size=24)
+        self.you_lost = arcade.Text("YOU LOST!", 300, 45, font_size=24)
 
     def update(self, mouse: helper.Mouse):
         self.game.update(mouse)
@@ -385,6 +397,12 @@ class Solitaire(helper.Page):
 
     def draw(self):
         arcade.draw_rectangle_filled(500, 325, 1000, 650, arcade.color.FOREST_GREEN)
+        if self.game.decidied != None:
+            if self.game.decidied:
+                self.you_won.draw()
+            else:
+                self.you_lost.draw()
+        
         self.reshuffle.draw()
         self.restart.draw()
         self.menu.draw()

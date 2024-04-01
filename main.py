@@ -52,6 +52,9 @@ class MyApplication(arcade.Window):
             if b.in_bounds(x, y):
                 b.released()
                 break
+
+    def on_key_press(self, symbol:int, modifers: int):
+        print(chr(symbol))
         
 
     def change_page(self, page):
