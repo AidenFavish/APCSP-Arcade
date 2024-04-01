@@ -38,10 +38,8 @@ class MyApplication(arcade.Window):
 
     def on_mouse_motion(self, x, y, dx, dy):
         self.mouse.setLocation(x, y)
-        #print(random.randint(10, 20))
 
     def on_mouse_press(self, x: float, y: float, button, modifiers):
-        #print(f"press {random.randint(0, 3)}")
         self.mouse.up = False
         for b in self.buttons:
             if b.in_bounds(x, y):
@@ -54,14 +52,13 @@ class MyApplication(arcade.Window):
             if b.in_bounds(x, y):
                 b.released()
                 break
-            
-    def on_key_press(self, key, modifiers):
-        print("Key is being pressed")
-        print(key)
-        if key != arcade.key.BACKSPACE:
-            self.current_guess += key
+
+    def on_key_press(self, symbol:int, modifers: int):
+        print(chr(symbol))
+        if symbol != arcade.key.BACKSPACE:
+            self.page.addLetter(chr(symbol))
         else:
-            self.current_guess = ""
+            self.page.removeLetter()
         
 
     def change_page(self, page):
