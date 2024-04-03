@@ -127,15 +127,15 @@ class SolitaireGame:
         y_top = self.tableau_y_top
         tableau = []
         for col in range(7):
-            temp = []
+            filled_col = []
             for card in range(col+1):
                 if card == col:
                     deck[0].to_back(False)
                 deck[0].center_x = centers[col]
                 deck[0].center_y = y_top - card * self.tableau_spacing
                 deck[0].snap()
-                temp.append(deck.pop(0))
-            tableau.append(temp)
+                filled_col.append(deck.pop(0))
+            tableau.append(filled_col)
 
         return tableau
 
