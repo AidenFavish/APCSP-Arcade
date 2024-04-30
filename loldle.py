@@ -4,6 +4,7 @@ import arcade
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+from time import sleep
 
 class Champion():
     def __init__(self, name: str, gender: str, positon: list, species: list, resources: str, range_type:str, region: list):
@@ -46,11 +47,13 @@ class Loldle(helper.Page):
         super().__init__(app)
         self.answer = Champion("Aatrox","Male",["Top"],["Darkin"],"Manaless","Melee",["Runeterra"])
         
-        self.champ_list = [Champion("Alistar","Male",["Support"],["Minotaur", "Human"],"Mana","Melee",["Runeterra"]),
+        self.champ_list = self.import_characters("league_characters.csv")
+        """self.champ_list = [Champion("Alistar","Male",["Support"],["Minotaur", "Human"],"Mana","Melee",["Runeterra"]),
                            Champion("Aatrox","Male",["Top"],["Darkin"],"Manaless","Melee",["Runeterra"]),
                            Champion("Ashe","Female",["Bottom"],["IceBorn", "Darkin"],"Mana","Ranged",["Frejlord"]),
                            Champion("Blitzcrank","Other",["Support"],["Golem"],"Mana","Melee",["Zaun"]),
                            Champion("Bard","Male",["Support"],["Celestial"],"Mana","Ranged",["Runeterra"])]
+        """
         self.pastguess = []
         self.autofillguess = []
         self.current_guess = arcade.Text("",100,100)
@@ -74,6 +77,31 @@ class Loldle(helper.Page):
 
     def update(self, mouse: helper.Mouse):
         pass
+    
+    def import_characters(self, filename):
+        characters = []
+        data = pd.read_csv(filename, header=0)
+        for i in range(len(data)):
+            name = data["Name"][i]
+            gender = data["Gender"][i]
+            position = data["Position(s)"][i]
+            species = data["Species"][i]
+            resource = data["Resource"][i]
+            range_type = data["Range type"][i]
+            reigons = data["Region(s)"][i]
+
+            position = position.replace("|", "")
+            species = species.replace("|", "")
+            reigons = reigons.replace("|", "")
+            position = position.split("-")
+            species = species.split("-")
+            reigons = reigons.split("-")
+
+            champ = Champion(name, gender, position, species, resource, range_type, reigons)
+            print(champ.toString())
+            characters.append(champ)
+
+        return characters
 
 
 
@@ -90,9 +118,12 @@ class Loldle(helper.Page):
             self.current_guess.draw()
             self.submitButton.draw()
             #print(len(self.autofillguess))
+            print(self.autofillguess)
+             
             for champ in self.autofillguess:
                 arcade.draw_text(text=champ, start_x=200, start_y=400 + marginx, color=arcade.color.BLACK, font_name= "Times New Roman")
                 marginx -= 15
+
             marginx = 0
             #Display each trait in a box to indicate wrong or right
             for champ in self.pastguess:
