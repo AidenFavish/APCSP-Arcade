@@ -4,6 +4,7 @@ import arcade
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+import random
 from time import sleep
 
 class Champion():
@@ -45,8 +46,6 @@ class Champion():
 class Loldle(helper.Page):
     def __init__(self, app):
         super().__init__(app)
-        self.answer = Champion("Aatrox","Male",["Top"],["Darkin"],"Manaless","Melee",["Runeterra"])
-        
         self.champ_list = self.import_characters("league_characters.csv")
         """self.champ_list = [Champion("Alistar","Male",["Support"],["Minotaur", "Human"],"Mana","Melee",["Runeterra"]),
                            Champion("Aatrox","Male",["Top"],["Darkin"],"Manaless","Melee",["Runeterra"]),
@@ -54,6 +53,9 @@ class Loldle(helper.Page):
                            Champion("Blitzcrank","Other",["Support"],["Golem"],"Mana","Melee",["Zaun"]),
                            Champion("Bard","Male",["Support"],["Celestial"],"Mana","Ranged",["Runeterra"])]
         """
+
+        self.answer = random.choice(self.champ_list)
+        print(self.answer)
         self.pastguess = []
         self.autofillguess = []
         self.current_guess = arcade.Text("",100,100)
@@ -98,7 +100,7 @@ class Loldle(helper.Page):
             reigons = reigons.split("-")
 
             champ = Champion(name, gender, position, species, resource, range_type, reigons)
-            print(champ.toString())
+            #print(champ.toString())
             characters.append(champ)
 
         return characters
@@ -118,11 +120,11 @@ class Loldle(helper.Page):
             self.current_guess.draw()
             self.submitButton.draw()
             #print(len(self.autofillguess))
-            print(self.autofillguess)
+            #print(self.autofillguess)
              
             for champ in self.autofillguess:
                 arcade.draw_text(text=champ, start_x=5, start_y=300 + marginx, color=arcade.color.BLACK, font_name= "Times New Roman", font_size= 18)
-                marginx -= 15
+                marginx -= 25
 
             marginx = 0
             #Display each trait in a box to indicate wrong or right
@@ -234,13 +236,13 @@ class Loldle(helper.Page):
         
         if ctr == len(check1):
             self.color_box = arcade.color.GREEN
-            print("GREEN")
+            #print("GREEN")
         elif ctr > 0:
             self.color_box = arcade.color.ORANGE
-            print("ORANGE")
+            #print("ORANGE")
         else:
             self.color_box = arcade.color.RED
-            print("RED")
+            #print("RED")
 
 
                 
