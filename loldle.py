@@ -59,7 +59,7 @@ class Loldle(helper.Page):
 
         self.win = False
         self.attempts = 0
-        self.submitButton = helper.ClassicButton(buttonList=app.buttons, center_x=100,center_y=200,width=50,height=50,text="Submit Guess",func=self.submit)
+        self.submitButton = helper.ClassicButton(buttonList=app.buttons, center_x=50,center_y=50,width=100,height=100,text="Submit Guess",func=self.submit)
 
         self.temp_name = arcade.Text("",100,100)
         self.temp_gender = arcade.Text("",100,100)
@@ -91,7 +91,7 @@ class Loldle(helper.Page):
             self.submitButton.draw()
             #print(len(self.autofillguess))
             for champ in self.autofillguess:
-                arcade.draw_text(text=champ, start_x=200, start_y=400 + marginx, color=arcade.color.BLACK, font_name= "Times New Roman")
+                arcade.draw_text(text=champ, start_x=5, start_y=300 + marginx, color=arcade.color.BLACK, font_name= "Times New Roman", font_size= 18)
                 marginx -= 15
             marginx = 0
             #Display each trait in a box to indicate wrong or right
@@ -129,7 +129,7 @@ class Loldle(helper.Page):
 
     def addLetter(self,letter):
         self.guess_string += letter
-        self.current_guess = arcade.Text(self.guess_string, 100, 100)
+        self.current_guess = arcade.Text(self.guess_string, 5, 111)
         self.autofillguess = []
         self.autofill()
 
@@ -140,7 +140,6 @@ class Loldle(helper.Page):
         self.autofillguess = []
 
     def autofill(self):
-        counter = 0
         if len(self.guess_string) > 0:
             for champ in self.champ_list:
                 if len(self.autofillguess) >= 3:
@@ -148,7 +147,7 @@ class Loldle(helper.Page):
                 elif self.guess_string.upper() == champ.getName().upper()[0:len(self.guess_string)]:
                     
                     self.autofillguess.append(champ.getName())
-                    counter += 1
+                    
                 
     #Colors when guess is correct incorrect or close
 
