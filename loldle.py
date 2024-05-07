@@ -55,7 +55,7 @@ class Loldle(helper.Page):
         """
 
         self.answer = random.choice(self.champ_list)
-        print(self.answer)
+        print(self.answer.toString())
         self.pastguess = []
         self.autofillguess = []
         self.current_guess = arcade.Text("",100,100)

@@ -54,7 +54,7 @@ class MyApplication(arcade.Window):
                 break
 
     def on_key_press(self, symbol:int, modifers: int):
-        print(chr(symbol))
+        #print(chr(symbol))
         if symbol != arcade.key.BACKSPACE:
             self.page.addLetter(chr(symbol))
         else:
