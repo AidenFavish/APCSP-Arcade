@@ -4,6 +4,7 @@ import menu
 import solitaire
 import loldle
 from typing import List
+import cribbage_menu
 import random
 
 # Set up the constants
@@ -67,6 +68,8 @@ class MyApplication(arcade.Window):
             self.page = solitaire.Solitaire(self)
         elif page == "LOLDLE":
             self.page = loldle.Loldle(self)
+        elif page == "CRIBBAGE_MENU":
+            self.page = cribbage_menu.Cribbage_menu(self)
         else:
             self.page = menu.Menu(self)
 
