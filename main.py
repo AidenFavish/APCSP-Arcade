@@ -56,10 +56,11 @@ class MyApplication(arcade.Window):
 
     def on_key_press(self, symbol:int, modifers: int):
         #print(chr(symbol))
-        if symbol != arcade.key.BACKSPACE:
-            self.page.addLetter(chr(symbol))
-        else:
-            self.page.removeLetter()
+        if self.page == "LOLDLE":
+            if symbol != arcade.key.BACKSPACE:
+                self.page.addLetter(chr(symbol))
+            else:
+                self.page.removeLetter()
         
 
     def change_page(self, page):
@@ -69,7 +70,7 @@ class MyApplication(arcade.Window):
         elif page == "LOLDLE":
             self.page = loldle.Loldle(self)
         elif page == "CRIBBAGE_MENU":
-            self.page = cribbage_menu.Cribbage_menu(self)
+            self.page = cribbage_menu.Cribbage_Menu(self)
         else:
             self.page = menu.Menu(self)
 
