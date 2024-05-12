@@ -5,6 +5,7 @@ import solitaire
 import loldle
 from typing import List
 import cribbage_menu
+import cribbage
 import random
 
 # Set up the constants
@@ -30,7 +31,7 @@ class MyApplication(arcade.Window):
 
     def update(self, dt):
         # Make visual and background calculations
-        self.page.update(self.mouse)
+        self.page.update(self.mouse, dt)
 
     def on_draw(self):
         # Draw visuals to screen
@@ -71,6 +72,8 @@ class MyApplication(arcade.Window):
             self.page = loldle.Loldle(self)
         elif page == "CRIBBAGE_MENU":
             self.page = cribbage_menu.Cribbage_Menu(self)
+        elif page == "CRIBBAGE":
+            self.page = cribbage.Cribbage(self)
         else:
             self.page = menu.Menu(self)
 

@@ -23,6 +23,7 @@ class Cribbage_Menu(helper.Page):
         self.player_player = helper.ClassicButton(app.buttons, 750, 150, 200, 75, "2 Player Mode", lambda: self.check("PVP"), arcade.color.FOREST_GREEN)
         self.player_bot = helper.ClassicButton(app.buttons, 250, 450, 200, 75, "Easy Ai Mode", lambda: self.check("PVE"), arcade.color.FOREST_GREEN)
         self.player_bot2 = helper.ClassicButton(app.buttons, 750, 450, 200, 75, "Hard Ai Mode", lambda: self.check("PVE2"), arcade.color.FOREST_GREEN)
+        self.play_game = helper.ClassicButton(app.buttons, 500, 325, 200, 75, "Game On", lambda: app.change_page("CRIBBAGE"), arcade.color.FOREST_GREEN)
 
         
         self.spriteList = arcade.SpriteList()
@@ -42,11 +43,12 @@ class Cribbage_Menu(helper.Page):
         self.player_player.draw()
         self.player_bot.draw()
         self.player_bot2.draw()
+        self.play_game.draw()
         for i in self.pillList:
             self.pill(i)
         
         
-    def update(self,dt):
+    def update(self, mouse: helper.Mouse, dt):
         pass
 
     def pill(self,param):
@@ -65,12 +67,20 @@ class Cribbage_Menu(helper.Page):
         if pill =="muggings":
             self.muggingsPill = not self.muggingsPill
             self.pillList[0][4] = self.muggingsPill
-        elif pill == "PVP" and (not self.PVEPill and not self.PVE2Pill):
+        elif pill == "PVP":
             self.PVPPill = not self.PVPPill
-            self.pillList[1][4] = self.PVPPill
-        elif pill == "PVE" and (not self.PVPPill and not self.PVE2Pill):
+            self.PVEPill = False
+            self.PVE2Pill = False
+        elif pill == "PVE":
             self.PVEPill = not self.PVEPill
-            self.pillList[2][4] = self.PVEPill
-        elif pill == "PVE2" and (not self.PVPPill and not self.PVEPill):
+            self.PVPPill = False
+            self.PVE2Pill = False
+        elif pill == "PVE2":
             self.PVE2Pill = not self.PVE2Pill
-            self.pillList[3][4] = self.PVE2Pill
+            self.PVEPill = False
+            self.PVPPill = False
+            
+
+        self.pillList[1][4] = self.PVPPill
+        self.pillList[2][4] = self.PVEPill
+        self.pillList[3][4] = self.PVE2Pill

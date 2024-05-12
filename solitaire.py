@@ -386,7 +386,7 @@ class Solitaire(helper.Page):
         self.you_won = arcade.Text("YOU WON!", 300, 45,font_size=24)
         self.you_lost = arcade.Text("YOU LOST!", 300, 45, font_size=24)
 
-    def update(self, mouse: helper.Mouse):
+    def update(self, mouse: helper.Mouse, dt):
         self.game.update(mouse)
         self.reshuffle.update(mouse)
         self.restart.update(mouse)

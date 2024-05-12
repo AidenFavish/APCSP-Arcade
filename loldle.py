@@ -77,7 +77,7 @@ class Loldle(helper.Page):
     def setup(self):
         pass
 
-    def update(self, mouse: helper.Mouse):
+    def update(self, mouse: helper.Mouse, dt):
         pass
     
     def import_characters(self, filename):
