@@ -45,7 +45,7 @@ class Page:
 
 # Classic button with square background and text
 class ClassicButton(Button):
-    def __init__(self, buttonList: list, center_x: float, center_y: float, width: float, height: float, text: str, func, color: arcade.Color = arcade.color.BLACK, text_color: arcade.Color = arcade.color.WHITE, font_size: float = 20.0):
+    def __init__(self, buttonList: list, center_x: float, center_y: float, width: float, height: float, text: str, func, color: arcade.Color = arcade.color.BLACK, text_color: arcade.Color = arcade.color.WHITE, font_size: float = 20.0, hidden: bool = False):
         super().__init__(buttonList)
         self.center_x = center_x
         self.center_y = center_y
@@ -55,10 +55,11 @@ class ClassicButton(Button):
         self.func = func
         self.color = color
         self.text_color = text_color
+        self.hidden = hidden
 
     def in_bounds(self, x: float, y: float) -> bool:
         # Returns true if in bounds given by width, height, center_x, and center_y
-        return (self.center_x - self.width / 2 <= x <= self.center_x + self.width / 2) and (self.center_y - self.height / 2 <= y <= self.center_y + self.height / 2)
+        return not self.hidden and ((self.center_x - self.width / 2 <= x <= self.center_x + self.width / 2) and (self.center_y - self.height / 2 <= y <= self.center_y + self.height / 2))
     
     def clicked(self):
         self.func()
@@ -115,7 +116,7 @@ class ProgressBar:
 
     def on_draw(self):
         # Draws the progress bar frame, then the partially filled area, then the fully filled area
-        arcade.draw_rectangle_outline(self.x, self.y, self.width, self.height, arcade.color.BLACK, border_width=2)
+        arcade.draw_rectangle_outline(self.x, self.y, self.width, self.height, arcade.color.WHITE, border_width=2)
         arcade.draw_rectangle_filled(self.x - self.width / 2 * (1-self.progress2), self.y, self.width * self.progress2, self.height, self.color2)
         arcade.draw_rectangle_filled(self.x - self.width / 2 * (1-self.progress), self.y, self.width * self.progress, self.height, self.color)
 
