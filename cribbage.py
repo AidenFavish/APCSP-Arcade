@@ -185,6 +185,8 @@ class CribbageGame():
         self.increment = 30
         self.p1_progress = helper.ProgressBar(175, 575, 300, 45, arcade.color.BLUE, arcade.color.LIGHT_BLUE)
         self.p2_progress = helper.ProgressBar(175, 475, 300, 45, arcade.color.RED, arcade.color.LIGHT_APRICOT)
+        self.p1_label = arcade.Text(f"{0}", 335, 575, arcade.color.WHITE, 25, align="left", width=100, anchor_y="center")
+        self.p2_label = arcade.Text(f"{0}", 335, 475, arcade.color.WHITE, 25, align="left", width=100, anchor_y="center")
 
         # Sets up the initial scene
         self.shuffled_cards[-1].flip()
@@ -302,7 +304,7 @@ class CribbageGame():
         elif self.currrent_task == "Pegging":  # Start the pegging
             temp = False
             for card in self.turn.hand:
-                if card.value + self.peg_pot <= 31:
+                if card.clipped_value() + self.peg_pot <= 31:
                     temp = True
                     break
             if temp:  # Place allowed card
@@ -321,7 +323,7 @@ class CribbageGame():
                 self.turn.task = "Going"
 
         elif self.currrent_task == "Placing":  # Place a card
-            if self.turn.state == "Selected" and self.turn.crib_discard[0].value + self.peg_pot <= 31:
+            if self.turn.state == "Selected" and self.turn.crib_discard[0].clipped_value() + self.peg_pot <= 31:
                 self.peg_pot += self.turn.crib_discard[0].clipped_value()
                 self.turn.confirm()
                 self.turn.flip_hand()
@@ -348,7 +350,7 @@ class CribbageGame():
             self.non_turn.task = "Pegging"
             temp = False
             for card in self.non_turn.hand:
-                if card.value + self.peg_pot <= 31:
+                if card.clipped_value() + self.peg_pot <= 31:
                     temp = True
                     break
 
@@ -358,13 +360,14 @@ class CribbageGame():
                 else:
                     self.add_points(self.non_turn, 1)  # Gives go points
 
-                self.non_turn.clip_buttons(len(self.non_turn.hand))
+                
                 self.non_turn.state = "Locked"
                 if self.non_turn.hand != [] and not self.non_turn.hand[0].on_back:
+                    self.non_turn.clip_buttons(len(self.non_turn.hand))
                     self.non_turn.flip_hand()
                 self.currrent_task = "Clear run"
 
-            elif self.non_turn.state == "Selected" and self.non_turn.crib_discard[0].value + self.peg_pot <= 31:
+            elif self.non_turn.state == "Selected" and self.non_turn.crib_discard[0].clipped_value() + self.peg_pot <= 31:
                 self.peg_pot += self.non_turn.crib_discard[0].clipped_value()
                 self.non_turn.confirm()
                 self.add_p_peg(self.non_turn, self.non_turn.crib_discard[0])
@@ -434,9 +437,12 @@ class CribbageGame():
         # Draw the pegged cards
         for card in self.p1_peg:
             card.sprite.draw()
-
         for card in self.p2_peg:
             card.sprite.draw()
+
+        # Draw the labels
+        self.p1_label.draw()
+        self.p2_label.draw()
 
     def get_shuffled_deck(self):
         deck = []
@@ -452,11 +458,13 @@ class CribbageGame():
     def add_points(self, player, points):
         if player == self.player1:
             self.player1_round += points
+            self.p1_label.text = f"{self.player1_round + self.player1_total}"
             self.p1_progress.set_progress2((self.player1_round + self.player1_total) / 121)
             if self.player1_round + self.player1_total >= 121:
                 pass  # Player 1 wins
         else:
             self.player2_round += points
+            self.p2_label.text = f"{self.player2_round + self.player2_total}"
             self.p2_progress.set_progress2((self.player2_round + self.player2_total) / 121)
             if self.player2_round + self.player2_total >= 121:
                 pass # Player 2 wins
