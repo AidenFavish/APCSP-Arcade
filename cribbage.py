@@ -330,6 +330,8 @@ class CribbageGame():
                 self.peg_pot_history.append((self.turn, self.turn.crib_discard[0].value))
                 
                 # Check for points save in history
+                self.check_for_points()
+
                 if self.peg_pot == 31:
                     self.add_points(self.turn, 2)
                     self.currrent_task = "Clear run"
@@ -370,6 +372,7 @@ class CribbageGame():
                 self.peg_pot_history.append((self.non_turn, self.non_turn.crib_discard[0].value))
 
                 # Check for points save in history
+                self.check_for_points()
 
                 self.non_turn.crib_discard = []
                 self.non_turn.state = "Revealed"
@@ -481,6 +484,52 @@ class CribbageGame():
     def clear_p_peg(self):
         self.p1_peg = []
         self.p2_peg = []
+
+    def check_for_points(self):
+        player = self.peg_pot_history[-1][0]
+        if self.peg_pot == 15:
+            self.add_points(player, 2)
+        
+        # Check for runs
+        if len(self.peg_pot_history) > 1:
+            for i in range(len(self.peg_pot_history) - 2):
+                if self.check_for_run(self.peg_pot_history[i:]):
+                    self.add_points(player, len(self.peg_pot_history[i:]))
+                    break
+
+        # Check for pairs
+        for i in range(len(self.peg_pot_history) - 4, len(self.peg_pot_history) - 1):
+            if len(self.peg_pot_history) >= len(self.peg_pot_history) - i and self.check_for_pairs(self.peg_pot_history[i:]):
+                if i == len(self.peg_pot_history) - 4:
+                    self.add_points(player, 12)
+                elif i == len(self.peg_pot_history) - 3:
+                    self.add_points(player, 6)
+                elif i == len(self.peg_pot_history) - 2:
+                    self.add_points(player, 2)
+                break
+
+    def check_for_run(self, x):
+        smallest = x[0][1]
+        for i in x:
+            if i[1] < smallest:
+                smallest = i[1]
+        
+        for i in range(len(x)):
+            temp = False
+            for j in x:
+                if j[1] == smallest + i:
+                    temp = True
+                    break
+            if not temp:
+                return False
+        return True
+    
+    def check_for_pairs(self, x):
+        temp = x[0][1]
+        for i in x:
+            if i[1] != temp:
+                return False
+        return True
 
 class Cribbage(helper.Page):
     def __init__(self, app):
