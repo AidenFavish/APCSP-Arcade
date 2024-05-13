@@ -253,17 +253,17 @@ class CribbageGame():
             card.sprite.move(dt)
 
         # Debug
-        # print(f"current task: {self.currrent_task}")
-        # if self.currrent_task == "Placing" or self.currrent_task == "Going" or self.currrent_task == "Pegging" or self.currrent_task == "Clear run" or self.currrent_task == "Counting":
-        #     print(f"turn state: {self.turn.state}")
-        #     print(f"non-turn state: {self.non_turn.state}")
-        #     print(f"turn task: {self.turn.task}")
-        #     print(f"non-turn task: {self.non_turn.task}")
-        #     print(f"peg pot: {self.peg_pot}")
-        #     print(f"peg pot history: {len(self.peg_pot_history)}")
-        #     print(f"player 1 score: {self.player1_round}")
-        #     print(f"player 2 score: {self.player2_round}")
-        #     print(f"buttons: {len(self.player1.button_list)}")
+        print(f"current task: {self.currrent_task}")
+        if self.currrent_task == "Placing" or self.currrent_task == "Going" or self.currrent_task == "Pegging" or self.currrent_task == "Clear run" or self.currrent_task == "Counting":
+            print(f"turn state: {self.turn.state}")
+            print(f"non-turn state: {self.non_turn.state}")
+            print(f"turn task: {self.turn.task}")
+            print(f"non-turn task: {self.non_turn.task}")
+            print(f"peg pot: {self.peg_pot}")
+            print(f"peg pot history: {len(self.peg_pot_history)}")
+            print(f"player 1 score: {self.player1_round}")
+            print(f"player 2 score: {self.player2_round}")
+            print(f"buttons: {len(self.player1.button_list)}")
 
         # Update the current task
         if self.currrent_task == "Pick Dealer":
@@ -766,9 +766,7 @@ class CribbageGame():
         return False
     
     def run_checker(self, x, history):
-        print(f"x: {x}")
         for play in history:
-            print(play[1])
             if x[0] == play[0] and x[0] == "Run" and self.a_in_b(play[1], x[1]):
                 return play
             elif x[0] == play[0] and x[0] == "Run" and self.a_in_b(x[1], play[1]):
