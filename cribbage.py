@@ -51,7 +51,13 @@ class Player:
         self.going = False
         self.select_button = helper.ClassicButton(buttonList, x, y + 150, 250, 50, "Select", self.select, hidden=True)
         self.go_button = helper.ClassicButton(buttonList, x, y + 150, 250, 50, "Go", self.go, hidden=True)
-        
+
+        # Counting
+        self.claim_button = helper.ClassicButton(buttonList, x - 85, y + 150, 150, 50, "Claim", self.claim, hidden=True)
+        self.claim_done_button = helper.ClassicButton(buttonList, x + 85, y + 150, 150, 50, "Done", self.claim_done, hidden=True)
+        self.temp_claim = []
+        self.claim_history = []
+        self.claimed = False
 
     def update(self, dt):
         for card in self.hand:
@@ -77,6 +83,12 @@ class Player:
         elif self.state == "Revealed" and self.task == "Going" and not self.going:
             self.go_button.hidden = False
             self.go_button.draw()
+        elif self.state == "Revealed" and self.task == "Counting" and not self.claimed:
+            self.claim_button.hidden = False
+            self.claim_button.draw()
+            self.claim_done_button.hidden = False
+            self.claim_done_button.draw()
+
 
     def new_hand(self, hand: List[Card]):
         self.hand = hand
@@ -93,7 +105,7 @@ class Player:
             self.fresh_buttons()
 
     def clicked(self, index):
-        if self.state == "Revealed":
+        if self.state == "Revealed" and (self.task == "Discard" or self.task == "Pegging"):
             if index in self.crib_discard:
                 self.crib_discard.remove(index)
                 self.hand[index].sprite.move_to(self.hand[index].sprite.end_center_x, self.hand[index].sprite.end_center_y - 25, 0.5)
@@ -103,7 +115,14 @@ class Player:
                 if (self.task == "Discard" and len(self.crib_discard) > 2) or (self.task == "Pegging" and len(self.crib_discard) > 1):
                     temp = self.crib_discard.pop(0)
                     self.hand[temp].sprite.move_to(self.hand[temp].sprite.end_center_x, self.hand[temp].sprite.end_center_y - 25, 0.5)
-
+        elif self.state == "Revealed" and self.task == "Counting":
+            if index in self.temp_claim:
+                self.temp_claim.remove(index)
+                self.hand[index].sprite.move_to(self.hand[index].sprite.end_center_x, self.hand[index].sprite.end_center_y - 25, 0.5)
+            else:
+                self.temp_claim.append(index)
+                self.hand[index].sprite.move_to(self.hand[index].sprite.end_center_x, self.hand[index].sprite.end_center_y + 25, 0.5)
+                
     def done(self):
         if len(self.crib_discard) == 2:
             self.done_button.hidden = True
@@ -158,6 +177,31 @@ class Player:
         for button in temp:
             self.button_list.append(button)
 
+    def claim(self):
+        self.claimed = True
+        temp = []
+        for i in self.temp_claim:
+            if i == -1:
+                temp.append(-1)
+            else:
+                card = self.hand[i]
+                temp.append(card)
+                card.sprite.move_to(card.sprite.end_center_x, card.sprite.end_center_y - 25, 0.5)
+        self.temp_claim = temp
+
+    def claim_done(self):
+        if not self.claimed:
+            for i in self.temp_claim:
+                if i != -1:
+                    card = self.hand[i]
+                    card.sprite.move_to(card.sprite.end_center_x, card.sprite.end_center_y - 25, 0.5)
+            self.temp_claim = []
+
+            self.clip_buttons(len(self.hand) + 1)
+            self.claimed = False
+            self.state = "Locked"
+            self.task = "Done counting"
+
 class CribbageGame():
     def __init__(self, app):
         # Set up the game
@@ -172,6 +216,7 @@ class CribbageGame():
         self.player1 = Player(250, 100, app.buttons)
         self.player2 = Player(750, 100, app.buttons)
         self.crib: List[Card] = []
+        self.crib_card = None
         self.player1_total = 0
         self.player1_round = 0
         self.player2_total = 0
@@ -209,7 +254,7 @@ class CribbageGame():
 
         # Debug
         print(f"current task: {self.currrent_task}")
-        if self.currrent_task == "Placing" or self.currrent_task == "Going" or self.currrent_task == "Pegging" or self.currrent_task == "Clear run":
+        if self.currrent_task == "Placing" or self.currrent_task == "Going" or self.currrent_task == "Pegging" or self.currrent_task == "Clear run" or self.currrent_task == "Counting":
             print(f"turn state: {self.turn.state}")
             print(f"non-turn state: {self.non_turn.state}")
             print(f"turn task: {self.turn.task}")
@@ -290,6 +335,7 @@ class CribbageGame():
             self.crib.append(self.shuffled_cards[39])
             self.shuffled_cards[39].flip()
             self.shuffled_cards[39].sprite.move_to(500, 550, 1)
+            self.crib_card = self.shuffled_cards[39]
 
             # Give dealer his nibs
             if self.shuffled_cards[39].value == 11:  # If the crib card is a jack
@@ -399,8 +445,12 @@ class CribbageGame():
             if self.player1.hand == [] and self.player2.hand == []:
                 self.add_points(self.peg_pot_history[-1][0], 1)  # Gives last card points
                 self.currrent_task = "Counting"
+                self.player1.new_hand(self.player1_hand_history)
+                self.player2.new_hand(self.player2_hand_history)
                 self.player1.state = "Locked"
                 self.player2.state = "Locked"
+                self.turn = self.dealer
+                self.non_turn = self.non_dealer
             else:
                 # Switch turns
                 if self.player1 == self.peg_pot_history[-1][0]:  # Whoever put the last card down is non-turn
@@ -414,6 +464,34 @@ class CribbageGame():
             self.peg_pot = 0
             self.peg_pot_history = []
             self.clear_p_peg()
+        elif self.currrent_task == "Counting":
+            if self.turn.task != "Counting" and self.turn.task != "Done counting":
+                self.turn.task = "Counting"
+                self.turn.state = "Revealed"
+                self.turn.fresh_buttons()
+                crib_button = helper.ClassicButton([], self.crib_card.sprite.end_center_x, self.crib_card.sprite.end_center_y, self.crib_card.sprite.width, self.crib_card.sprite.height, "", self.crib_card_click)
+                self.turn.button_list.insert(0, crib_button)
+            elif self.turn.task == "Done counting":
+                self.crib_card.sprite.move_to(500, 550, 0.5)
+                # Switch turns or move on to muggins
+                if self.turn == self.dealer:
+                    self.turn = self.non_dealer
+                    self.non_turn = self.dealer
+                else:
+                    self.currrent_task = "Muggins"
+            elif self.turn.claimed:
+                if -1 in self.turn.temp_claim:
+                    self.crib_card.move_to(500, 550, 0.5)
+                # Check for points
+                #check, history = self.check_claim(self.turn.temp_claim, self.turn.claim_history, self.turn)
+                history = None
+                if history != None:
+                    self.turn.claim_history.append(history)
+                    #self.add_points(self.turn, check)
+
+                self.turn.claimed = False
+                self.turn.temp_claim = []
+
 
     def draw(self):
         if self.currrent_task == "Pick Dealer" or self.currrent_task == "Draw Hand":
@@ -536,6 +614,93 @@ class CribbageGame():
         temp = x[0][1]
         for i in x:
             if i[1] != temp:
+                return False
+        return True
+    
+    def crib_card_click(self):
+        if -1 in self.turn.temp_claim:
+            self.turn.temp_claim.remove(-1)
+            self.crib_card.sprite.move_to(500, 550, 0.5)
+            crib_card_button: helper.ClassicButton = self.turn.button_list[0]
+            crib_card_button.center_x = 500
+            crib_card_button.center_y = 550
+        else:
+            self.turn.temp_claim.append(-1)
+            self.crib_card.sprite.move_to(250 if self.turn == self.player1 else 750, 365, 0.5)
+            crib_card_button: helper.ClassicButton = self.turn.button_list[0]
+            crib_card_button.center_x = 250 if self.turn == self.player1 else 750
+            crib_card_button.center_y = 365
+    
+    def check_claim(self, x: List[Card], history, player):
+        # Check for sum of 15
+        sum = 0
+        for card in x:
+            sum += card.clipped_value()
+        if sum == 15 and not self.already_claimed(("15", x), history):
+            return 2, ("15", x)
+        
+        # Check for pairs
+        temp = x[0].value
+        temp2 = False
+        for card in x:
+            if card.value != temp:
+                temp2 = True
+                break
+        if not temp2:
+            if len(x) == 2 and not self.already_claimed(("Pair", x), history):
+                return 2, ("Pair", x)
+            elif len(x) == 3 and not self.already_claimed(("3 Pair", x), history):
+                return 6, ("3 Pair", x)
+            elif len(x) == 4 and not self.already_claimed(("4 Pair", x), history):
+                return 12, ("4 Pair", x)
+        
+        # Check for runs
+        smallest = x[0].value
+        for card in x:
+            if card.value < smallest:
+                smallest = card.value
+        good = True
+        for i in range(len(x)):
+            temp = False
+            for card in x:
+                if card.value == smallest + i:
+                    temp = True
+                    break
+            if not temp:
+                good = False
+                break
+        if good:
+            if len(x) == 3 and not self.already_claimed(("3 Run", x), history):
+                return 3, ("3 Run", x)
+            elif len(x) == 4 and not self.already_claimed(("4 Run", x), history):
+                return 4, ("4 Run", x)
+            elif len(x) == 5 and not self.already_claimed(("5 Run", x), history):
+                return 5, ("5 Run", x)
+
+    def already_claimed(self, x, history):
+        for play in history:
+            if "Pair" in x[0] and "Pair" in play[0]:  # If we are testing a pair with another pair
+                if self.a_in_b(x[1], play[1]):  # If x is a subset of play
+                    return True
+                elif len(x[1]) > len(play[1]) and self.a_in_b(play[1], x[1]):  # If play is a subset of x
+                    return True
+            if "Run" in x[0] and "Run" in play[0]:  # If we are testing a run with another run
+                pass
+            if x[0] == play[0] and self.identical_contents(x[1], play[1]):  # If the play is identical
+                return True
+        return False
+    
+    def identical_contents(self, x, y):
+        if len(x) != len(y):
+            return False
+        for i in x:
+            if i not in y:
+                return False
+        return True
+    
+    def a_in_b(self, a, b):
+        for i in a:
+            if i not in b:
                 return False
         return True
 
