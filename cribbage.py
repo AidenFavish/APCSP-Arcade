@@ -480,14 +480,18 @@ class CribbageGame():
                 else:
                     self.currrent_task = "Muggins"
             elif self.turn.claimed:
+                include_crib_card = False
                 if -1 in self.turn.temp_claim:
-                    self.crib_card.move_to(500, 550, 0.5)
+                    self.crib_card.sprite.move_to(500, 550, 0.5)
+                    self.turn.button_list[0].center_x = 500
+                    self.turn.button_list[0].center_y = 550
+                    self.turn.temp_claim.remove(-1)
+                    include_crib_card = True
+
                 # Check for points
-                #check, history = self.check_claim(self.turn.temp_claim, self.turn.claim_history, self.turn)
-                history = None
-                if history != None:
-                    self.turn.claim_history.append(history)
-                    #self.add_points(self.turn, check)
+                check = self.check_claim(self.turn.temp_claim, self.turn.claim_history, self.turn, include_crib_card)
+                if check > 0:
+                    self.add_points(self.turn, check)
 
                 self.turn.claimed = False
                 self.turn.temp_claim = []
@@ -631,13 +635,22 @@ class CribbageGame():
             crib_card_button.center_x = 250 if self.turn == self.player1 else 750
             crib_card_button.center_y = 365
     
-    def check_claim(self, x: List[Card], history, player):
+    def check_claim(self, x: List[Card], history, player: Player, include_crib_card):
+        if include_crib_card:
+            x.append(self.crib_card)
+
         # Check for sum of 15
         sum = 0
         for card in x:
             sum += card.clipped_value()
         if sum == 15 and not self.already_claimed(("15", x), history):
-            return 2, ("15", x)
+            player.claim_history.append(("15", x))  # Add to history
+            return 2
+        
+        # Check for jack match
+        if len(x) == 1 and x[0].value == 11 and x[0].suit == self.crib_card.suit and not self.already_claimed(("Jack", x), history):
+            history.append(("Jack", x))
+            return 1
         
         # Check for pairs
         temp = x[0].value
@@ -647,12 +660,46 @@ class CribbageGame():
                 temp2 = True
                 break
         if not temp2:
-            if len(x) == 2 and not self.already_claimed(("Pair", x), history):
-                return 2, ("Pair", x)
-            elif len(x) == 3 and not self.already_claimed(("3 Pair", x), history):
-                return 6, ("3 Pair", x)
-            elif len(x) == 4 and not self.already_claimed(("4 Pair", x), history):
-                return 12, ("4 Pair", x)
+            if len(x) == 2 and not self.already_claimed(("Pair", x), history):  # 1 pair
+                player.claim_history.append(("Pair", x))
+                return 2
+            elif len(x) == 3:  # 3 of a kind
+                sum = 0
+                if not self.already_claimed(("Pair", x[0:2]), history):
+                    player.claim_history.append(("Pair", x[0:2]))
+                    sum += 2
+                if not self.already_claimed(("Pair", x[1:3]), history):
+                    player.claim_history.append(("Pair", x[1:3]))
+                    sum += 2
+                if not self.already_claimed(("Pair", [x[0], x[2]]), history):
+                    player.claim_history.append(("Pair", [x[0], x[2]]))
+                    sum += 2
+
+                if sum > 0:
+                    return sum
+            elif len(x) == 4:  # 4 of a kind
+                sum = 0
+                if not self.already_claimed(("Pair", x[0:2]), history):
+                    player.claim_history.append(("Pair", x[0:2]))
+                    sum += 2
+                if not self.already_claimed(("Pair", x[1:3]), history):
+                    player.claim_history.append(("Pair", x[1:3]))
+                    sum += 2
+                if not self.already_claimed(("Pair", x[2:4]), history):
+                    player.claim_history.append(("Pair", x[2:4]))
+                    sum += 2
+                if not self.already_claimed(("Pair", [x[0], x[2]]), history):
+                    player.claim_history.append(("Pair", [x[0], x[2]]))
+                    sum += 2
+                if not self.already_claimed(("Pair", [x[0], x[3]]), history):
+                    player.claim_history.append(("Pair", [x[0], x[3]]))
+                    sum += 2
+                if not self.already_claimed(("Pair", [x[1], x[3]]), history):
+                    player.claim_history.append(("Pair", [x[1], x[3]]))
+                    sum += 2
+
+                if sum > 0:
+                    return sum
         
         # Check for runs
         smallest = x[0].value
@@ -670,26 +717,60 @@ class CribbageGame():
                 good = False
                 break
         if good:
-            if len(x) == 3 and not self.already_claimed(("3 Run", x), history):
-                return 3, ("3 Run", x)
-            elif len(x) == 4 and not self.already_claimed(("4 Run", x), history):
-                return 4, ("4 Run", x)
-            elif len(x) == 5 and not self.already_claimed(("5 Run", x), history):
-                return 5, ("5 Run", x)
+            if not self.already_claimed(("Run", x), history):
+                temp = self.run_checker(x, history)
+                if temp == True:
+                    player.claim_history.append(("Run", x))
+                    return len(x)
+                elif temp != False:
+                    player.claim_history.insert(player.claim_history.index(temp), ("Run", x))
+                    player.claim_history.remove(temp)
+                    return len(x) - len(temp[1])
+                
+        # Check for flush
+        temp = x[0].suit
+        temp2 = False
+        for card in x:
+            if card.suit != temp:
+                temp2 = True
+                break
+        if not temp2:
+            if len(x) == 4 and not self.already_claimed(("Flush", x), history) and not include_crib_card:  # If we havent played a 4 flush yet
+                x.append(self.crib_card)
+                if not self.already_claimed(("Flush", x), history):  # If we havent played a 5 flush yet
+                    x.pop()
+                    player.claim_history.append(("Flush", x))
+                    return 4
+            elif len(x) == 5 and not self.already_claimed(("Flush", x), history):  # If we havent played a 5 flush yet
+                x.remove(self.crib_card)
+                if not self.already_claimed(("Flush", x), history):  # If we havent played a 4 flush yet
+                    x.append(self.crib_card)
+                    player.claim_history.append(("Flush", x))
+                    return 5
+                else:  # If we have played a 4 flush already
+                    index = player.claim_history.index(("Flush", x))
+                    player.claim_history.pop(index)
+                    x.append(self.crib_card)
+                    player.claim_history.insert(index, ("Flush", x))
+                    return 1
+                
+        # If no points are found
+        return 0
 
     def already_claimed(self, x, history):
         for play in history:
-            if "Pair" in x[0] and "Pair" in play[0]:  # If we are testing a pair with another pair
-                if self.a_in_b(x[1], play[1]):  # If x is a subset of play
-                    return True
-                elif len(x[1]) > len(play[1]) and self.a_in_b(play[1], x[1]):  # If play is a subset of x
-                    return True
-            if "Run" in x[0] and "Run" in play[0]:  # If we are testing a run with another run
-                pass
             if x[0] == play[0] and self.identical_contents(x[1], play[1]):  # If the play is identical
                 return True
         return False
     
+    def run_checker(self, x, history):
+        for play in history:
+            if x[0] == play[0] and x[0] == "Run" and self.a_in_b(play[1], x[1]):
+                return play
+            elif x[0] == play[0] and x[0] == "Run" and self.a_in_b(x[1], play[1]):
+                return False
+        return True
+        
     def identical_contents(self, x, y):
         if len(x) != len(y):
             return False
