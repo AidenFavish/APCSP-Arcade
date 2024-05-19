@@ -202,6 +202,25 @@ class Player:
             self.state = "Locked"
             self.task = "Done counting"
 
+    def clear_hand(self):
+        self.hand = []
+        self.claim_history = []
+
+    def reset(self):
+        self.hand = []
+        self.crib_discard = []
+        self.crib_chosen = False
+        self.done_button.hidden = True
+        self.reveal_button.hidden = True
+        self.select_button.hidden = True
+        self.go_button.hidden = True
+        self.claim_button.hidden = True
+        self.claim_done_button.hidden = True
+        self.temp_claim = []
+        self.claimed = False
+        self.state = "Locked"
+        self.task = "Discard"
+
 class CribbageGame():
     def __init__(self, app):
         # Set up the game
@@ -238,6 +257,8 @@ class CribbageGame():
         self.shuffled_cards[-2].flip()
         self.shuffled_cards[-1].sprite.move_to(250, 100, 2)
         self.shuffled_cards[-2].sprite.move_to(750, 100, 2)
+
+        self.winner = None
 
     def update(self, dt):
         # Update all the cards
@@ -332,7 +353,6 @@ class CribbageGame():
                 self.currrent_task = "Draw Crib Card"
 
         elif self.currrent_task == "Draw Crib Card":  # Draw the crib card
-            self.crib.append(self.shuffled_cards[39])
             self.shuffled_cards[39].flip()
             self.shuffled_cards[39].sprite.move_to(500, 550, 1)
             self.crib_card = self.shuffled_cards[39]
@@ -473,12 +493,15 @@ class CribbageGame():
                 self.turn.button_list.insert(0, crib_button)
             elif self.turn.task == "Done counting":
                 self.crib_card.sprite.move_to(500, 550, 0.5)
+                self.turn.task = "None"
                 # Switch turns or move on to muggins
                 if self.turn == self.dealer:
                     self.turn = self.non_dealer
                     self.non_turn = self.dealer
                 else:
                     self.currrent_task = "Muggins"
+                    self.turn = self.dealer
+                    self.non_turn = self.non_dealer
             elif self.turn.claimed:
                 include_crib_card = False
                 if -1 in self.turn.temp_claim:
@@ -495,6 +518,86 @@ class CribbageGame():
 
                 self.turn.claimed = False
                 self.turn.temp_claim = []
+        elif self.currrent_task == "Muggins":
+            if self.turn.task != "Counting" and self.turn.task != "Done counting":
+                self.turn.task = "Counting"
+                self.turn.state = "Revealed"
+                self.turn.fresh_buttons()
+                crib_button = helper.ClassicButton([], self.crib_card.sprite.end_center_x, self.crib_card.sprite.end_center_y, self.crib_card.sprite.width, self.crib_card.sprite.height, "", self.crib_card_click)
+                self.turn.button_list.insert(0, crib_button)
+            elif self.turn.task == "Done counting":
+                self.crib_card.sprite.move_to(500, 550, 0.5)
+                self.turn.task = "None"
+                if self.turn == self.dealer:
+                    self.turn = self.non_dealer
+                    self.non_turn = self.dealer
+                else:
+                    self.currrent_task = "Bonus"
+                    self.turn = self.dealer
+                    self.non_turn = self.non_dealer
+                    self.dealer.clear_hand()
+                    self.non_dealer.clear_hand()
+                    self.dealer.new_hand(self.crib)
+                    self.dealer.flip_hand()
+            elif self.turn.claimed:
+                include_crib_card = False
+                if -1 in self.turn.temp_claim:
+                    self.crib_card.sprite.move_to(500, 550, 0.5)
+                    self.turn.button_list[0].center_x = 500
+                    self.turn.button_list[0].center_y = 550
+                    self.turn.temp_claim.remove(-1)
+                    include_crib_card = True
+
+                # Check for points
+                check = self.check_claim(self.turn.temp_claim, self.turn.claim_history, self.turn, include_crib_card)
+                if check > 0:
+                    self.add_points(self.non_turn, check)
+
+                self.turn.claimed = False
+                self.turn.temp_claim = []
+        elif self.currrent_task == "Bonus":
+            if self.dealer.task != "Counting" and self.dealer.task != "Done counting":
+                self.dealer.task = "Counting"
+                self.dealer.state = "Revealed"
+                self.dealer.fresh_buttons()
+                crib_button = helper.ClassicButton([], self.crib_card.sprite.end_center_x, self.crib_card.sprite.end_center_y, self.crib_card.sprite.width, self.crib_card.sprite.height, "", self.crib_card_click)
+                self.dealer.button_list.insert(0, crib_button)
+            elif self.dealer.task == "Done counting":
+                self.crib_card.sprite.move_to(500, 550, 0.5)
+                self.dealer.task = "None"
+                if self.turn == self.dealer:
+                    self.turn = self.non_dealer
+                    self.non_turn = self.dealer
+                else:
+                    self.currrent_task = "Next round"
+            elif self.dealer.claimed:
+                include_crib_card = False
+                if -1 in self.dealer.temp_claim:
+                    self.crib_card.sprite.move_to(500, 550, 0.5)
+                    self.dealer.button_list[0].center_x = 500
+                    self.dealer.button_list[0].center_y = 550
+                    self.dealer.temp_claim.remove(-1)
+                    include_crib_card = True
+
+                # Check for points
+                check = self.check_claim(self.dealer.temp_claim, self.dealer.claim_history, self.dealer, include_crib_card)
+                if check > 0:
+                    self.add_points(self.dealer if self.turn == self.dealer else self.non_dealer, check)
+
+                self.dealer.claimed = False
+                self.dealer.temp_claim = []
+        elif self.currrent_task == "Next round":
+            self.confirm_points()
+            self.currrent_task = "Draw Hand"
+            self.shuffled_cards = self.get_shuffled_deck()
+            self.player1.reset()
+            self.player2.reset()
+            temp = self.dealer
+            self.dealer = self.non_dealer
+            self.non_dealer = temp
+            self.crib_card = None
+            self.crib = []
+
 
 
     def draw(self):
@@ -509,6 +612,8 @@ class CribbageGame():
         self.player2.draw()
 
         # Draw the crib
+        if self.crib_card is not None:
+            self.crib_card.sprite.draw()
         for card in self.crib:
             card.sprite.draw()
 
@@ -543,13 +648,17 @@ class CribbageGame():
             self.p1_label.text = f"{self.player1_round + self.player1_total}"
             self.p1_progress.set_progress2((self.player1_round + self.player1_total) / 121)
             if self.player1_round + self.player1_total >= 121:
-                pass  # Player 1 wins
+                # Player 1 wins
+                self.currrent_task = "Game Over"
+                self.winner = "Player 1 Wins!"
         else:
             self.player2_round += points
             self.p2_label.text = f"{self.player2_round + self.player2_total}"
             self.p2_progress.set_progress2((self.player2_round + self.player2_total) / 121)
             if self.player2_round + self.player2_total >= 121:
-                pass # Player 2 wins
+                # Player 2 wins
+                self.currrent_task = "Game Over"
+                self.winner = "Player 2 Wins!"
 
     def confirm_points(self):
         self.player1_total += self.player1_round
@@ -622,7 +731,20 @@ class CribbageGame():
         return True
     
     def crib_card_click(self):
-        if -1 in self.turn.temp_claim:
+        if self.currrent_task == "Bonus":
+            if -1 in self.dealer.temp_claim:
+                self.dealer.temp_claim.remove(-1)
+                self.crib_card.sprite.move_to(500, 550, 0.5)
+                crib_card_button: helper.ClassicButton = self.dealer.button_list[0]
+                crib_card_button.center_x = 500
+                crib_card_button.center_y = 550
+            else:
+                self.dealer.temp_claim.append(-1)
+                self.crib_card.sprite.move_to(250 if self.dealer == self.player1 else 750, 365, 0.5)
+                crib_card_button: helper.ClassicButton = self.dealer.button_list[0]
+                crib_card_button.center_x = 250 if self.dealer == self.player1 else 750
+                crib_card_button.center_y = 365
+        elif -1 in self.turn.temp_claim:
             self.turn.temp_claim.remove(-1)
             self.crib_card.sprite.move_to(500, 550, 0.5)
             crib_card_button: helper.ClassicButton = self.turn.button_list[0]
@@ -796,15 +918,60 @@ class CribbageGame():
 class Cribbage(helper.Page):
     def __init__(self, app):
         super().__init__(app)
-        self.game = CribbageGame(app)
+        self.game: CribbageGame = CribbageGame(app)
         self.label1 = arcade.Text("Player 1", 175, 620, arcade.color.WHITE, 20, 200, "center", anchor_x="center", anchor_y="center")
         self.label2 = arcade.Text("Player 2", 175, 520, arcade.color.WHITE, 20, 200, "center", anchor_x="center", anchor_y="center")
         self.p1 = arcade.Text("Player 1", 250, 10, arcade.color.WHITE, 10, 100, "center", anchor_x="center", anchor_y="center")
         self.p2 = arcade.Text("Player 2", 750, 10, arcade.color.WHITE, 10, 100, "center", anchor_x="center", anchor_y="center")
         self.quit = helper.ClassicButton(app.buttons, 25, 625, 20, 20, "X", lambda: app.change_page("MENU"), font_size=15)
 
+        self.details = arcade.Text("Deciding Dealer", 500, 350, arcade.color.WHITE, 15, 250, "center", anchor_x="center", anchor_y="center")
+
     def update(self, mouse: helper.Mouse, dt):
         self.game.update(dt)
+        self.details.text = self.get_details()
+        if self.game.dealer == self.game.player1 and self.game.currrent_task != "Pick Dealer":
+            self.p1.text = "(Dealer) Player 1"
+            self.p2.text = "Player 2"
+        elif self.game.currrent_task != "Pick Dealer":
+            self.p1.text = "Player 1"
+            self.p2.text = "(Dealer) Player 2"
+
+    def get_details(self):
+        current = self.game.currrent_task
+        player = "Player 1 " if self.game.player1 == self.game.turn else "Player 2 "
+        non_turn = "Player 1 " if self.game.player1 == self.game.non_turn else "Player 2 "
+        if current == "Pick Dealer":
+            return "Deciding Dealer"
+        elif current == "Draw Hand":
+            return "Drawing Hands"
+        elif current == "Player 1 Discard":
+            return "Player 1 Discarding"
+        elif current == "Player 2 Discard":
+            return "Player 2 Discarding"
+        elif current == "Draw Crib Card":
+            return "Drawing Crib Card"
+        elif current == "Pegging":
+            return "Pegging"
+        elif current == "Placing":
+            return player + "Placing Card"
+        elif current == "Going":
+            return player + "Going"
+        elif current == "Clear run":
+            return "Clearing Run"
+        elif current == "Counting":
+            return player + "Counting"
+        elif current == "Muggins":
+            return non_turn + "Can Muggins"
+        elif current == "Bonus":
+            if self.game.turn == self.game.dealer:
+                return player + "Get Your Bonus"
+            else:
+                return non_turn + "Can Muggins"
+        elif current == "Next round":
+            return "Next Round"
+        elif current == "Game Over":
+            return self.game.winner
 
     def draw(self):
         arcade.draw_rectangle_filled(500, 325, 1000, 650, arcade.color.FOREST_GREEN)
@@ -814,5 +981,6 @@ class Cribbage(helper.Page):
         self.p2.draw()
         self.label1.draw()
         self.label2.draw()
+        self.details.draw()
         self.game.draw()
         self.quit.draw()

@@ -43,7 +43,8 @@ class MyApplication(arcade.Window):
 
     def on_mouse_press(self, x: float, y: float, button, modifiers):
         self.mouse.up = False
-        for b in self.buttons:
+        temp = self.buttons.copy()
+        for b in temp:
             if b.in_bounds(x, y):
                 b.clicked()
                 break
